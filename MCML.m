@@ -1,147 +1,144 @@
-%mô ph?ng công su?t ?èn-->s? h?t cho m?i b??c sóng
-p=0.0002 %công su?t ?èn led watt
-w_l=[700,720];%ph? sóng min,max nm
-delta_lamda= 1; %?? phân gi?i b??c sóng
-t=2; %th?i gian chi?u sáng s
+%Mo phong cong suat den
+p=0.0002; %Cong suat den LED (watt)
+w_l=[700,720];%pho lamda (nm)
+delta_lamda= 1; %do chia
+t=2; %thoi gian chieu sang (s)
+ttype='musc_interp.mat'; %loai mo 
 
-p=p*t; %n?ng l??ng chi?u ?èn trong th?i gian t J
+p=p*t; %nang luong den chieu trong khoang thoi gian t (J)
 lamda=w_l(1):delta_lamda:w_l(2);
-e_n(2,length(lamda))=0;
-n=0;
 d=length(lamda);
-%l?y b??c sóng và s? h?t
-for i=1:length(lamda)
+e_n(2,d)=0;% khoi tao ma tran nang luong va so hat
+N=0;
+load(ttype);%lay du lieu tu file '.mat'
+
+Wthr=0.001;%Nguong dung photon
+spot=1.5; %ban kinh chum tia (nm)
+m=10;%nguong xo so (nm)
+c1=500;c2=500;dr=0.05;dz=0.05; % so o phan chia theo r va z
+k=0;
+n1=1;%{chiet suat khong khi}
+n2=1.38; %{chiet suat mo}
+tetac=asin(n1/n2); % goc phan xa toan phan
+Rsp=((n1-n2)/(n1+n2))^2;% he so phan xa cua song toi
+Rdif=Rsp;survive=0;
+zam=0;totalref=0;
+Q1(c1,c2)=0;% Khoi dau ma tran bang 0 
+Q2(c1,c2)=0;
+
+%tinh nang luong va so hat
+tic
+for i=1:d
     e_n(1,i) =((6.626*10.^(-34))*3*10.^8)/(lamda(i)*10.^(-9));
-    e_n(2,i)=round(p/e_n(1,i)); %tính s? h?t cho t?ng b??c sóng
-    e_n(2,i)=e_n(2,i)/(10.^(12)); %gi?m s? h?t-->d? mô ph?ng
-    
-    e_n(2,i)=round(e_n(2,i));
-    n=n+e_n(2,i);
+    e_n(2,i)=round(p/e_n(1,i)); %tinh so hat cho tung buoc song
+    e_n(2,i)=round(e_n(2,i)/(10.^(10))); %giam so hat 
+    N=N+e_n(2,i);
 end
 
-N=n;
-totalp=N;
-
-lamda_n=[lamda;e_n(2,1:length(lamda))];%g?m b??c sóng và s? h?t cho m?i ph?n t? 
-l=1; ri=length(lamda); %con tr? 2 ??u lamda
-%mô ph?ng cho d?i sóng
-while N>0
-  lr=lamda(l)+round(rand()*(lamda(ri)-lamda(l)));
-  loca=lr-lamda(1)+1;
-  sta=0;
-  
-  if lamda_n(2,loca)>0 
-      lamda_n(2,loca)=lamda_n(2,loca)-1;
-      N=N-1;
-      sta=1;
-  end
-  
-  if sta==1
-     load('musc_interp.mat');
-     %l?y các giá tr? mua,mus,g trong file,mat
-     vi=lr-musc_interp(1,1)+1;%v? trí l?y giá tr?
-     ma=musc_interp(vi,2);
-     ms=musc_interp(vi,3);
-     g=musc_interp(vi,4);
-     
-     % Nguong dung photon
-     Wthr=0.001;
-     % ban kinh chum tia
-     spot=1.5;%{mm}
-     % nguong xo so
-     m=10; %{nm}
-     c1=500;c2=500;dr=0.05;dz=0.05;
-     k=0;
-     n1=1;%{chiet suat khong khi}
-     n2=1.38; %{chiet suat mo c?}
-     tetac=asin(n1/n2); % goc phan xa toan phan
-     Rsp=((n1-n2)/(n1+n2))^2;% he so phan xa cua song toi
-     Rdif=Rsp;survive=0;
-     zam=0;totalref=0;
-     Q(c1,c2)=0;% Khoi dau ma tran bang 0    
-     
-     W=1-Rsp;
-     x1=spot*sqrt(-log(rand)/2);
-     y1=0;
-     z1=0;
-     mx=0;my=0;mz=1;
-     
-     while W ~= 0 
-        k=k+1;
-        step=-log(rand)/(ma+ms);% mo phong quang duong tu do
-        x1=x1+mx*step;
-        y1=y1+my*step;
-        z1=z1+mz*step;
-        if z1<=0 % di nguoc ra ngoai
-            z1=-z1;
-            zam=zam+1;
-            tetai=acos(abs(mz));
-            if tetai<tetac
-            tetar=asin(n2*sin(tetai)/n1);%{Snell's law}
-            del=tetai-tetar;
-            sum=tetai+tetar;
-            Reflectance=0.5*(sin(del)/sin(sum))^2+0.5*(tan(del)/tan(sum))^2;
-            Rdif=Rdif+(1-Reflectance)*W;
-            else
-            Reflectance=1;
-            totalref=totalref+1;
-            end
-            W=W*Reflectance;
-        end
-        %Ghi
-        r=sqrt(x1*x1+y1*y1);
-        i=round(r/dr+0.5);
-        j=round(z1/dz+0.5);
-        dQ=W*ma/(ma+ms);
-        W=W*ms/(ma+ms);
-        if (i<=c1)&&(j<=c2) 
-            Q(i,j)= Q(i,j)+dQ;
-        end
-        teta=acos((1+g^2-((1-g^2)/(1-g+2*g*rand))^2)/2/g);
-        fi=2*pi*rand;      
-        if abs(mz)>0.9999
-            mx=sin(teta)*cos(fi);
-            my=sin(teta)*sin(fi);
-            mz=mz*cos(teta)/abs(mz);
-        else
-            mx1=mx;
-            my1=my;
-            mz1=mz;
-            mx=sin(teta)*(mx1*mz1*cos(fi)-my1*sin(fi))/sqrt(1-mz1*mz1)+mx1*cos(teta);
-            my=sin(teta)*(my1*mz1*cos(fi)+mx1*sin(fi))/sqrt(1-mz1*mz1)+my1*cos(teta);
-            mz=-sin(teta)*cos(fi)*sqrt(1-mz1*mz1)+mz1*cos(teta);
-        end
-        if W<Wthr
-            if rand<=1/m
-                W=m*W;
-                survive=survive+1;
-            else
-                W=0;
-            end
+for a=1:d
+    n=e_n(2,a);
+    local=lamda(a)- musc_interp(1,1)+1;
+    ma=musc_interp(local,2);
+    ms=musc_interp(local,3);
+    g=musc_interp(local,4);
+    
+    %mo phong 
+    for nn=1:n
+        W=1-Rsp;
+        x1=spot*sqrt(-log(rand)/2);
+        y1=0;
+        z1=0;
+        mx=0;my=0;mz=1;
+        
+        while W ~= 0 
+              k=k+1;
+              step=-log(rand)/(ma+ms);% mo phong quang duong tu do
+              x1=x1+mx*step;
+              y1=y1+my*step;
+              z1=z1+mz*step;
+              if z1<=0 % di nguoc ra ngoai
+                 z1=-z1;
+                 zam=zam+1;
+                 tetai=acos(abs(mz));
+                 if tetai<tetac
+                 tetar=asin(n2*sin(tetai)/n1);%{Snell's law}
+                 del=tetai-tetar;
+                 sum=tetai+tetar;
+                 Reflectance=0.5*(sin(del)/sin(sum))^2+0.5*(tan(del)/tan(sum))^2;
+                 Rdif=Rdif+(1-Reflectance)*W;
+                 else
+                 Reflectance=1;
+                 totalref=totalref+1;
+                 end
+                 W=W*Reflectance;
+              end
+              %Ghi
+              r=sqrt(x1*x1+y1*y1);
+              i=round(r/dr+0.5);
+              j=round(z1/dz+0.5);
+              dQ=W*ma/(ma+ms);
+              W=W*ms/(ma+ms);
+              if (i<=c1)&&(j<=c2) 
+                  Q1(i,j)= Q1(i,j)+dQ;
+                  Q2(i,j)= Q2(i,j)+dQ/ma;   
+              end
+              teta=acos((1+g^2-((1-g^2)/(1-g+2*g*rand))^2)/2/g);
+              fi=2*pi*rand;      
+              if abs(mz)>0.9999
+                 mx=sin(teta)*cos(fi);
+                 my=sin(teta)*sin(fi);
+                 mz=mz*cos(teta)/abs(mz);
+              else
+                 mx1=mx;
+                 my1=my;
+                 mz1=mz;
+                 mx=sin(teta)*(mx1*mz1*cos(fi)-my1*sin(fi))/sqrt(1-mz1*mz1)+mx1*cos(teta);
+                 my=sin(teta)*(my1*mz1*cos(fi)+mx1*sin(fi))/sqrt(1-mz1*mz1)+my1*cos(teta);
+                 mz=-sin(teta)*cos(fi)*sqrt(1-mz1*mz1)+mz1*cos(teta);
+             end
+             if W<Wthr
+                if rand<=1/m
+                   W=m*W;
+                   survive=survive+1;
+                else
+                   W=0;
+                end
+             end
         end
     end
-  end
-%gi?i h?n kho?ng random
-  if ri>=l
-      if lamda_n(2,l)==0 l=l+1; end
-      if lamda_n(2,ri)==0 ri=ri-1; end
-  end
-  
+     
 end
-%chuy?n ??i n?ng l??ng
+toc
+
+%chuyen doi nang luong
 V=zeros;
 for i=1:500
    V(i)=(2*i+1)*pi*dr^2*dz;	%(mm3)
    V=V';
 end
-H=zeros(500,500);
+H1=zeros(500,500);
+H2=zeros(500,500);
+
 for i=1:500
-   H(i,:)=Q(i,:)/totalp/V(i);
+   H1(i,:)=(Q1(i,:)/N/V(i))*10.^(10);
+   H2(i,:)=(Q2(i,:)/N/V(i))*10.^(10); 
 end
+
 %su phan bo mat do nang luong, J/mm3
-figure
-imagesc(log10(H(1:150,1:150)))
+figure(1)
+imagesc(log10(H1(1:150,1:150)));
 title('su phan bo mat do nang luong, J/mm3');
 xlabel(['do sau x ' num2str(dz) 'mm' ]);
 ylabel(['ban kinh x ' num2str(dr) 'mm']);
+
+P=5e-3;
+F=H2*P*100;%(fluence rate W/cm^2)
+figure(2)
+imagesc(log10(F(1:150,1:150)));
+title('su phan bo fluence rate, W/mm2');
+xlabel(['do sau x ' num2str(dz) 'mm' ]);
+ylabel(['ban kinh x ' num2str(dr) 'mm']);
+
+
+
     
