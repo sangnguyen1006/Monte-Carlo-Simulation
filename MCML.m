@@ -1,12 +1,18 @@
+function MCML()
+global dz dr
+global H1 F 
+global lamda power
+%dat bien toan cuc
 %Mo phong cong suat den
 p=0.0002; %Cong suat den LED (watt)
-w_l=[700,720];%pho lamda (nm)
-delta_lamda= 1; %do chia
+%w_l=[700,720];%pho lamda (nm)
+%delta_lamda= 1; %do chia
 t=2; %thoi gian chieu sang (s)
 ttype='musc_interp.mat'; %loai mo 
 
+led_interp();%chay chuong trinh noi suy led_interp.m
+%load('led_interp.mat');
 p=p*t; %nang luong den chieu trong khoang thoi gian t (J)
-lamda=w_l(1):delta_lamda:w_l(2);
 d=length(lamda);
 e_n(2,d)=0;% khoi tao ma tran nang luong va so hat
 N=0;
@@ -29,8 +35,8 @@ Q2(c1,c2)=0;
 %tinh nang luong va so hat
 tic
 for i=1:d
-    e_n(1,i) =((6.626*10.^(-34))*3*10.^8)/(lamda(i)*10.^(-9));
-    e_n(2,i)=round(p/e_n(1,i)); %tinh so hat cho tung buoc song
+    e_n(1,i) =((6.626*10.^(-34))*3*10.^8)/(lamda(i)*10.^(-9));%nang luong cua tung buoc song
+    e_n(2,i)=round((p*power(i))/e_n(1,i)); %tinh so hat cho tung buoc song
     e_n(2,i)=round(e_n(2,i)/(10.^(10))); %giam so hat 
     N=N+e_n(2,i);
 end
@@ -124,20 +130,12 @@ for i=1:500
    H2(i,:)=(Q2(i,:)/N/V(i))*10.^(10); 
 end
 
-%su phan bo mat do nang luong, J/mm3
-figure(1)
-imagesc(log10(H1(1:150,1:150)));
-title('su phan bo mat do nang luong, J/mm3');
-xlabel(['do sau x ' num2str(dz) 'mm' ]);
-ylabel(['ban kinh x ' num2str(dr) 'mm']);
-
 P=5e-3;
 F=H2*P*100;%(fluence rate W/cm^2)
-figure(2)
-imagesc(log10(F(1:150,1:150)));
-title('su phan bo fluence rate, W/mm2');
-xlabel(['do sau x ' num2str(dz) 'mm' ]);
-ylabel(['ban kinh x ' num2str(dr) 'mm']);
+
+look();%chay file look.m de hien thi
+
+end
 
 
 
